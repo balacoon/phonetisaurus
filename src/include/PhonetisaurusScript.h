@@ -41,6 +41,8 @@
 #include <sys/stat.h>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <fstream>
 /*! \struct PathData
     \brief Response data.
 
@@ -114,6 +116,27 @@ class PhonetisaurusScript {
     veto_set_.insert (1);
     veto_set_.insert (2);
   }
+
+  PhonetisaurusScript (istream &strm) : delim_("") {
+    if (!strm) {
+      throw std::exception();
+    }
+    // this is solving the memory leak problem
+    VectorFst<StdArc>* model_temp;
+    model_temp = (VectorFst<StdArc>::Read(strm, FstReadOptions()));
+    model_ = *model_temp;
+    delete model_temp;
+    // model_ = *(VectorFst<StdArc>::Read(model));
+    ArcSort (&model_, ILabelCompare<StdArc> ());
+    isyms_ = model_.InputSymbols ();
+    osyms_ = model_.OutputSymbols ();
+    imax_  = LoadClusters (isyms_, &imap_, &invimap_);
+    omax_  = LoadClusters (osyms_, &omap_, &invomap_);
+    veto_set_.insert (0);
+    veto_set_.insert (1);
+    veto_set_.insert (2);
+  }
+
 
   // The actual phoneticizer routine
   vector<PathData> Phoneticize (const string& word, int nbest = 1,
